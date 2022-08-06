@@ -296,7 +296,7 @@ const handleTabKeyDown = (e) => {
     }
 
     >.text-box-full {
-      flex: 0 0 100%;
+      flex: 0 0 100% !important;
     }
 
     >.resize-line {
