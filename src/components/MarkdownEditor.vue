@@ -110,7 +110,7 @@ const dragChangeElementSize = () => {
   // 在resizeLine元素上按下鼠标时触发
   resizeLine.value.onmousedown = function() {
     // 编辑器左侧位置
-    const editorLeftPosition = editor.value.offsetLeft;
+    const editorLeftPosition = editor.value.getBoundingClientRect().x;
     // 输入框最小宽度
     const textBoxMinWidth = 100 + editorLeftPosition;
     // 预览框最小宽度
