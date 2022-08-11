@@ -71,13 +71,19 @@ import { marked } from 'marked';
 import 'github-markdown-css';
 import '../assets/editorIcon';
 
+// 声明 props 和 emit
+const { data } = defineProps({
+  data: Object,
+});
+const emit = defineEmits(['dataChange']);
+
 /**
  * ********** 基础功能 **********
  */
 // 数据
 const markdown = reactive({
-  text: '',
-  html: '',
+  text: data.text,
+  html: data.html,
 });
 
 // 是否开启预览
@@ -86,9 +92,11 @@ const showPreview = ref(true);
 // 是否开启全屏显示
 const fullscreen = ref(false);
 
-// 解析 markdown
+// 解析 markdown，并将text和html上传给父组件
 markdown.html = computed(() => {
-  return marked(markdown.text);
+  const html = marked(markdown.text);
+  emit('dataChange', { title: title.value, text: markdown.text, html });
+  return html;
 });
 
 // 元素标识

@@ -1,9 +1,19 @@
 <script setup>
+import { reactive } from 'vue';
 import MarkdownEditor from './components/MarkdownEditor.vue';
+
+const data = reactive({
+  text: 'markdown text',
+  html: 'html',
+});
+
+const handleDataChange = (data) => {
+  console.log(data);
+}
 </script>
 
 <template>
-  <markdown-editor></markdown-editor>
+  <markdown-editor :data="data" @dataChange="handleDataChange"></markdown-editor>
 </template>
 
 <style>
