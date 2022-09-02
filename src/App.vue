@@ -1,19 +1,24 @@
 <script setup>
-import { reactive } from 'vue';
+import { ref } from 'vue';
 import MarkdownEditor from './components/MarkdownEditor.vue';
 
-const data = reactive({
-  text: 'markdown text',
-  html: 'html',
-});
-
 const handleDataChange = (data) => {
-  console.log(data);
+  // console.log(data);
+}
+
+const content = ref('');
+
+const handleBtnClick = () => {
+  console.log(content.value);
 }
 </script>
 
 <template>
-  <markdown-editor :data="data" @dataChange="handleDataChange"></markdown-editor>
+  <button @click="handleBtnClick">print content</button>
+  <markdown-editor
+    v-model:content="content"
+    @dataChange="handleDataChange">
+  </markdown-editor>
 </template>
 
 <style>

@@ -49,18 +49,18 @@
       <!-- 分隔线 -->
       <div class="divider"></div>
       <!-- 标题 -->
-      <div style="color: #555;">{{ title ? title : '未命名' }}.md</div>
+      <div style="color: #555;">{{ post.title ? post.title : '未命名' }}.md</div>
     </div>
     <div ref="container" class="container">
       <textarea
         ref="textBox"
         spellcheck="false"
         :class="`text-box ${showPreview ? '' : 'text-box-full'}`"
-        v-model="markdown.text"
+        v-model="post.md"
         @keydown.tab="handleTabKeyDown"
       ></textarea>
       <div v-show="showPreview" ref="resizeLine" class="resize-line"></div>
-      <div v-show="showPreview" class="html-box markdown-body" v-html="markdown.html"></div>
+      <div v-show="showPreview" class="html-box markdown-body" v-html="post.html"></div>
     </div>
   </div>
 </template>
@@ -68,22 +68,63 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { marked } from 'marked';
+import hljs from 'highlight.js/lib/common';
+import 'highlight.js/styles/atom-one-dark.css';
 import 'github-markdown-css';
 import '../assets/editorIcon';
 
-// 声明 props 和 emit
-const { data } = defineProps({
-  data: Object,
+// 配置 marked
+marked.setOptions({
+  renderer: new marked.Renderer(),
+  highlight: function(code, lang) { // 代码高亮
+    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+    return hljs.highlight(code, { language }).value;
+  },
 });
-const emit = defineEmits(['dataChange']);
+
+// 声明 props 和 emit
+const props = defineProps({
+  content: String,  // 原始markdown文本
+});
+const emit = defineEmits(['dataChange', 'update:content']);
 
 /**
  * ********** 基础功能 **********
  */
 // 数据
-const markdown = reactive({
-  text: data.text,
-  html: data.html,
+const post = reactive({
+  title: '',
+  md: '',
+  html: ''
+});
+
+// 监听props，获取新数据
+watch(props, (newValue) => {
+  post.md = newValue.content;
+});
+
+// 解析 markdown，并将最新数据上传给父组件
+post.html = computed(() => {
+  const html = marked(post.md);
+  emit('update:content', post.md);
+  emit('dataChange', {
+    title: post.title ? post.title : '未命名',
+    md: post.md,
+    html
+  });
+  return html;
+});
+
+// 获取标题
+post.title = computed(() => {
+  let t = '';
+  const list = post.md.split('\n');
+  for (let i = 0; i < list.length; i++) {
+    if (list[i][0] === '#' && list[i][1] === ' ') {
+      t = list[i].replace(/#\s+/, '');
+      return t;
+    }
+  }
 });
 
 // 是否开启预览
@@ -91,13 +132,6 @@ const showPreview = ref(true);
 
 // 是否开启全屏显示
 const fullscreen = ref(false);
-
-// 解析 markdown，并将text和html上传给父组件
-markdown.html = computed(() => {
-  const html = marked(markdown.text);
-  emit('dataChange', { title: title.value, text: markdown.text, html });
-  return html;
-});
 
 // 元素标识
 const editor = ref(null); // 编辑器
@@ -109,7 +143,7 @@ const resizeLine = ref(null); // 调整输入框和预览框大小的元素
 const dragChangeElementSize = () => {
   // 在resizeLine元素上按下鼠标时触发
   resizeLine.value.onmousedown = function() {
-    // 编辑器左侧位置
+    // 获取编辑器距离左侧窗口的距离
     const editorLeftPosition = editor.value.getBoundingClientRect().x;
     // 输入框最小宽度
     const textBoxMinWidth = 100 + editorLeftPosition;
@@ -131,7 +165,7 @@ const dragChangeElementSize = () => {
 }
 
 // 关闭和打开全屏时重置textbox宽度，防止出现textbox宽度溢出的bug
-watch(fullscreen, (newValue, oldValue) => {
+watch(fullscreen, () => {
   textBox.value.style.flex = '0 0 50%';
 });
 
@@ -139,21 +173,6 @@ watch(fullscreen, (newValue, oldValue) => {
 onMounted(() => {
   dragChangeElementSize();
   textBox.value.focus();
-});
-
-/**
- * ********** 自动获取标题 **********
- */
-// 获取标题
-const title = computed(() => {
-  let t = '';
-  const list = markdown.text.split('\n');
-  for (let i = 0; i < list.length; i++) {
-    if (list[i][0] === '#' && list[i][1] === ' ') {
-      t = list[i].replace(/#\s+/, '');
-      return t;
-    }
-  }
 });
 
 /**
@@ -170,9 +189,9 @@ const getCursorPosition = () => {
 // 插入文本
 const insertText = async (text) => {
   const position = getCursorPosition();
-  const left = markdown.text.slice(0, position.start);
-  const right = markdown.text.slice(position.end, markdown.text.length);
-  markdown.text = left + text + right;
+  const left = post.md.slice(0, position.start);
+  const right = post.md.slice(position.end, post.md.length);
+  post.md = left + text + right;
   // 设置光标位置在刚插入的文本末尾
   /**
    * bug（具体原因未知）: v-model有延迟导致textBox.value.value与markdown.text在同一时间下值并不相同，这会使后面setSelectionRange代码无效
@@ -257,27 +276,29 @@ const handleTabKeyDown = (e) => {
   left: 0;
   width: 100vw !important;
   height: 100vh !important;
+  z-index: 99;
 }
 
 .markdown-editor {
   position: relative;
   width: 100%;
   height: 100%;
-  border: 1px solid #bbb;
+  border: 1px solid #ddd;
 
   .topbar {
     padding: 0 10px;
     height: 30px;
     // background: #ddd;
-    border-bottom: 1px solid #bbb;
+    border-bottom: 1px solid #ddd;
     box-sizing: border-box;
     display: flex;
     align-items: center;
+    background: #fff;
     >.divider {
       margin: 0 10px;
       width: 1px;
       height: 100%;
-      background: #bbb;
+      background: #ddd;
     }
   }
 
