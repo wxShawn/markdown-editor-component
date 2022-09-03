@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import MarkdownEditor from './components/MarkdownEditor.vue';
+import MarkdownEditor from './components/MarkdownEditor';
 
 const handleDataChange = (data) => {
   // console.log(data);
